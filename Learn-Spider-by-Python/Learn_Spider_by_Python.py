@@ -1,4 +1,133 @@
 #%%
+#利用xlwings读取stock score股票代码
+#利用datetime读取并写入当前日期
+#利用selenium不弹窗运行读取朝阳信息股票评分
+#将评分写入excel表格
+import xlwings
+import datetime
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait 
+
+app = xlwings.App(add_book=False) 
+app.display_alerts = False
+#app.screen_updating = False #工作簿不可见，停止更新
+wb = app.books.open('C:\\Users\\陈俊晔\\OneDrive\\stock score.xlsx')   #xlwings读取excel文件
+sht = wb.sheets.active    #激活工作表
+#sht.api.Rows(2).Insert()    #插入行（指定行的上方）
+sht.api.Columns(2).Insert()    #插入列（指定列的前方）
+sht.api.Cells(1,2).value = str(datetime.date.today())   #写入日期
+chrome_options = Options()
+chrome_options.add_argument("--headless")   #设置selenium不弹窗运行
+driver = webdriver.Chrome(chrome_options=chrome_options)    #设置selenium不弹窗运行
+#tcol = sht.api.UsedRange.Columns.count    #读取列数
+trow = sht.api.UsedRange.Rows.count #读取行数
+for n in range(2,trow):
+    driver.get("https://advcaifuhao.antfortune.com/p/q/jeo2a9tl/pages/home/index.html?stock_code=" + str(sht.api.Cells(n,1).value)) #读取股票代码
+    try:
+        WebDriverWait(driver, 10, poll_frequency=0.1).until(lambda x: x.find_element_by_css_selector("p.score").text!='')   #等待，直到找到分数，每0.1s进行查询，限时10s；因会抛出异常，所以要写在try except区块里
+        #time.sleep(1)
+        score = driver.find_element_by_css_selector('p.score')
+        #sht.api.Cells(2,n).value = score.text[:score.text.find('\n')]
+        sht.api.Cells(n,2).value = score.text[:4]   #分数为前四位字符
+        #time.sleep(2)
+        print('%.2f%%' % ((n / int(trow)) * 100),end=' ')   #显示进度
+        print(score.text[:4],end='\n')
+        time.sleep(0.1)
+    except:
+        time.sleep(0.1)
+    
+wb.save()   #保存
+app.quit()  #退出Excel程序
+driver.quit()   #退出selenium模拟器进程
+
+#%%
+#利用xlwings读取stock score股票代码
+#利用datetime读取并写入当前日期
+import xlwings
+import datetime
+
+app = xlwings.App(add_book=False) 
+app.display_alerts = False
+app.screen_updating = False   #工作簿不可见，停止更新
+wb = app.books.open('C:\\Users\\陈俊晔\\OneDrive\\stock score.xlsx')   #xlwings读取excel文件
+sht = wb.sheets.active    #激活工作表
+tcol = sht.api.UsedRange.Columns.count    #读取列数
+sht.api.Rows(2).Insert()    #插入行（指定行的上方）
+sht.api.Cells(2,1).value = str(datetime.date.today())   #写入日期
+wb.save()   #保存
+app.quit()  #退出Excel程序
+
+#%%
+#使用selenium自带driver的options设置不弹窗运行
+#good!
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+chrome_options = Options()
+chrome_options.add_argument("--headless")   #设置selenium不弹窗运行
+driver = webdriver.Chrome(chrome_options=chrome_options)    #设置selenium不弹窗运行
+driver.get("https://advcaifuhao.antfortune.com/p/q/jeo2a9tl/pages/home/index.html?stock_code=600986")
+    
+name = driver.find_element_by_css_selector('p.name')
+score = driver.find_element_by_css_selector('p.score')
+print(name.text)
+print(score.text)
+
+
+#%%
+#使用pyvirtualdisplay使selenium不弹窗运行
+#证明不行，因pyvirtualdisplay内核xvfb基于Linux环境
+from pyvirtualdisplay import Display
+from selenium import webdriver
+
+with Display():
+    driver = webdriver.Chrome()
+    driver.get("https://advcaifuhao.antfortune.com/p/q/jeo2a9tl/pages/home/index.html?stock_code=600986")
+    
+    name = driver.find_element_by_css_selector('p.name')
+    score = driver.find_element_by_css_selector('p.score')
+    print(name.text)
+    print(score.text)
+    driver.quit()
+
+
+#%%
+#tushare抓取所有股票
+#利用openpyxyl将所有股票代码写入excel文件stock score
+import tushare
+from openpyxl import Workbook
+
+stock_info = tushare.get_stock_basics()
+stock_code = stock_info.index.tolist()
+print(stock_code)
+
+excel_book = Workbook()
+excel_sheet = excel_book.active
+
+excel_sheet['A1'] = '日期'
+for i in range(len(stock_code)):
+    temp = excel_sheet.cell(row=1,column=i + 2)
+    temp.value = stock_code[i]
+
+excel_book.save('C:\\Users\\陈俊晔\\OneDrive\\stock score.xlsx')
+
+
+#%%
+#使用lxml解析网页
+import requests
+from lxml import etree
+
+link = 'http://www.santostang.com/'
+headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.98 Safari/537.36'}
+r = requests.get(link,headers=headers)
+
+html = etree.HTML(r.text)
+title_list = html.xpath('//h1[@class="post-title"]/a/text()')
+print(title_list)
+
+#%%
 #使用BeautifulSoup获取博客标题
 import requests
 from bs4 import BeautifulSoup
@@ -15,6 +144,10 @@ title_list = soup.find_all('h1',class_='post-title')
 for i in range(len(title_list)):
     title = title_list[i].a.text.strip()
     print('第%s篇文章的标题是：%s' % (i + 1,title))
+
+print(soup.prettify())
+soup.header.h3
+soup.header.div.contents
 
 #%%
 #使用正则表达式re包抓取博客主页所有文章标题
