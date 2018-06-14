@@ -1,4 +1,81 @@
 #%%
+#多线程入门
+#类包装式：调用Threading库创建线程，从threading.Thread继承
+#   _thread提供了低级别、原始的线程，它相比于threading模块，可能还是比较有限的。threading模块则提供了
+#Thread类来处理线程，包括以下方法：
+#·run()：用以表示线程活动的方法。
+#·start()：启动线程活动。
+#·join([time])：等待至线程中止。阻塞调用线程直至线程的join()方法被调用为止。
+#·isAlive()：返回线程是否是活动的。
+#·getName()：返回线程名。
+#·setName()：设置线程名。
+import threading
+import time
+
+class myThread(threading.Thread):
+    def __init__(self,name,delay):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.delay = delay
+    def run(self):
+        print("Starting " + self.name)
+        print_time(self.name,self.delay)
+        print("Exiting " + self.name)
+
+def print_time(threadName,delay):
+    counter = 0
+    while counter < 3:
+        time.sleep(delay)
+        print(threadName,time.ctime())
+        counter+=1
+
+threads = []
+
+#创建新线程
+thread1 = myThread("Thread-1",1)
+thread2 = myThread("Thread-2",2)
+
+#开启新线程
+thread1.start()
+thread2.start()
+
+#添加线程到线程列表
+threads.append(thread1)
+threads.append(thread2)
+
+#等待所有线程完成
+for t in threads:
+    t.join()
+
+print("Exiting Main Thread")
+
+#%%
+#多线程入门
+#函数式：调用_thread()模块中的start_new_thread()函数产生新线程
+#类包装式：调用Threading库创建线程，从threading.Thread继承
+#下面是函数式.
+#其中，_thread中使用start_new_thread()函数来产生新线程，语法如下：
+#   _thread.start_new_thread(function,args[, kwargs])
+#   其中，function表示线程函数，在上例中为print_time；args为传递给线程函数的参数，它必须是tuple类型，
+#在上例中为("Thread-1",1)；最后的kwargs是可选参数。
+#   _thread提供了低级别、原始的线程，它相比于threading模块，可能还是比较有限的。threading模块则提供了
+#Thread类来处理线程。
+import _thread
+import time
+
+#为线程定义一个函数
+def print_time(threadName, delay):
+    count = 0
+    while count < 3:
+        time.sleep(delay)
+        count+=1
+        print(threadName,time.ctime())
+
+_thread.start_new_thread(print_time,("Thread-1",1))
+_thread.start_new_thread(print_time,("Thread-2",2))
+print("Main Finished")
+
+#%%
 #利用xlwings读取stock score股票代码
 #利用datetime读取并写入当前日期
 #利用selenium不弹窗运行读取朝阳信息股票评分
